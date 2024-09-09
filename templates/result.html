@@ -1,0 +1,15 @@
+<!-- result.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Summary Result</title>
+</head>
+<body>
+    <h1>Video Summary</h1>
+    <!-- summary에서 줄바꿈(\n)을 <br>로 변환해서 출력 -->
+    <p>{{ summary|replace('\n', '<br>')|safe }}</p>
+    <a href="/">Go back</a>
+</body>
+</html>
