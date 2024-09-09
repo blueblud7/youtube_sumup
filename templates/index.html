@@ -1,28 +1,90 @@
-"""
-Created on Mon Sep  9 11:06:27 2024
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Summarizer</title>
+    <style>
+        /* 결과를 표시할 박스 스타일 */
+        #resultBox {
+            width: 80%;
+            height: 200px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 20px 0;
+            overflow-y: auto; /* 박스 내용이 길어지면 스크롤바 추가 */
+            white-space: pre-wrap; /* 줄바꿈 유지 */
+            background-color: #f9f9f9;
+            display: none; /* 처음에는 박스를 숨김 */
+        }
 
-@author: Sangwon Chae
-"""
+        /* 복사 버튼 스타일 */
+        #copyButton {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            display: none; /* 처음에는 버튼을 숨김 */
+        }
 
-from flask import Flask, render_template, request, jsonify
+        #copyButton:hover {
+            background-color: #45a049;
+        }
+    </style>
+    <script>
+        function submitForm(event) {
+            event.preventDefault(); // 폼의 기본 제출 방지
 
-import youtube_summary  # YouTube 요약 코드를 포함한 파일
+            const youtubeLink = document.getElementById('youtube_link').value;
 
-app = Flask(__name__)
+            // AJAX 요청을 통해 서버로 데이터 전송
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", "/summarize", true);
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    // 성공적으로 응답을 받으면 결과 박스에 표시
+                    const resultBox = document.getElementById("resultBox");
+                    const copyButton = document.getElementById("copyButton");
 
-@app.route('/summarize', methods=['POST'])
-def summarize():
-    youtube_link = request.form['youtube_link']
-    summary = youtube_summary.summarize_youtube_video(youtube_link)
-    
-    if summary:
-        return summary  # AJAX를 통해 HTML에 직접 결과 표시
-    else:
-        return "Summary generation failed."
+                    resultBox.innerHTML = xhr.responseText;
+                    resultBox.style.display = "block"; // 결과 박스를 보여줌
+                    copyButton.style.display = "inline-block"; // 복사 버튼을 보여줌
+                }
+            };
 
-if __name__ == '__main__':
-    app.run(debug=True)
+            // 서버로 요청 전송
+            xhr.send("youtube_link=" + encodeURIComponent(youtubeLink));
+        }
+
+        function copyToClipboard() {
+            // 결과 박스의 텍스트를 복사하는 기능
+            const resultText = document.getElementById('resultBox').innerText;
+            navigator.clipboard.writeText(resultText).then(function() {
+                alert("Copied to clipboard!");
+            }, function() {
+                alert("Failed to copy text.");
+            });
+        }
+    </script>
+</head>
+<body>
+    <h1>YouTube Video Summarizer</h1>
+
+    <!-- 유튜브 링크 입력 폼 -->
+    <form onsubmit="submitForm(event)">
+        <label for="youtube_link">Enter YouTube Link:</label>
+        <input type="text" id="youtube_link" name="youtube_link" required>
+        <button type="submit">Summarize</button>
+    </form>
+
+    <!-- 결과를 보여주는 박스 -->
+    <div id="resultBox"></div>
+
+    <!-- 복사 버튼 -->
+    <button id="copyButton" onclick="copyToClipboard()">Copy</button>
+</body>
+</html>
