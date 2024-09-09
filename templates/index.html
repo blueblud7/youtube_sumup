@@ -11,7 +11,7 @@
         border: 1px solid #ddd;
         background-color: #f4f4f4;
       }
-      input[type="text"] {
+      input[type="text"], textarea {
         width: 80%;
         padding: 10px;
         margin: 10px 0;
@@ -32,7 +32,7 @@
         border: 1px solid #ddd;
         background-color: #fff;
         min-height: 100px;
-        white-space: pre-wrap; /* 문단 띄어쓰기 및 줄바꿈 반영 */
+        white-space: pre-wrap;
         position: relative;
       }
       #copyBtn {
@@ -59,7 +59,11 @@
   </head>
   <body>
     <h2>YouTube Summarizer</h2>
-    <input type="text" id="youtubeLink" placeholder="Enter YouTube link">
+    <input type="text" id="youtubeLink" placeholder="Enter YouTube link"><br>
+
+    <!-- Custom prompt 입력 필드 추가 -->
+    <textarea id="customPrompt" placeholder="Enter your custom prompt (optional)"></textarea><br>
+    
     <button id="summarizeBtn">Summarize</button>
     
     <h3>Result</h3>
@@ -74,9 +78,10 @@
       // 요약 요청
       document.getElementById('summarizeBtn').addEventListener('click', function() {
         const youtubeLink = document.getElementById('youtubeLink').value;
-        
+        const customPrompt = document.getElementById('customPrompt').value;
+
         if (youtubeLink) {
-          $.post('/summarize', { youtube_link: youtubeLink }, function(data) {
+          $.post('/summarize', { youtube_link: youtubeLink, custom_prompt: customPrompt }, function(data) {
             if (data.error) {
               $('#result').text(data.error);
               $('#copyBtn').hide();  // 에러일 때는 Copy 버튼 숨김
