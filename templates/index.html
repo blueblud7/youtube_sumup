@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
     <title>YouTube Summarizer</title>
     <style>
       body {
         font-family: Arial, sans-serif;
-        max-width: 600px;
+        max-width: 800px;
         margin: 20px auto;
         padding: 20px;
         border: 1px solid #ddd;
@@ -55,10 +57,17 @@
       .card:hover {
         background-color: #e0e0e0;
       }
+      iframe {
+        margin-top: 20px;
+        width: 100%;
+        height: 315px;
+        display: none;
+      }
     </style>
   </head>
   <body>
     <h2>YouTube Summarizer</h2>
+    
     <input type="text" id="youtubeLink" placeholder="Enter YouTube link"><br>
 
     <!-- Custom prompt 입력 필드 추가 -->
@@ -69,6 +78,9 @@
     <h3>Result</h3>
     <div id="result">Summary will appear here...</div>
     <button id="copyBtn" style="display:none;">Copy</button>
+
+    <!-- 유튜브 비디오 임베드 영역 -->
+    <iframe id="youtubePlayer" src="" frameborder="0" allowfullscreen></iframe>
     
     <h3>History</h3>
     <div id="history"></div>
@@ -85,12 +97,24 @@
             if (data.error) {
               $('#result').text(data.error);
               $('#copyBtn').hide();  // 에러일 때는 Copy 버튼 숨김
+              $('#youtubePlayer').hide();  // 에러일 때는 임베드된 동영상 숨김
             } else {
+              // 중복 메시지가 있으면 경고로 표시
+              if (data.message === "중복 URL입니다. 기존 요약 내용을 불러옵니다.") {
+                alert(data.message);  // 중복 메시지 경고창 표시
+              }
+
               $('#result').html(data.summary);  // HTML 형식으로 문단 띄어쓰기 반영
               $('#copyBtn').show();  // 성공적으로 요약하면 Copy 버튼 표시
               
+              // 유튜브 비디오를 iframe에 임베드
+              const videoId = youtubeLink.split('v=')[1];
+              const embedUrl = `https://www.youtube.com/embed/${videoId}`;
+              $('#youtubePlayer').attr('src', embedUrl);
+              $('#youtubePlayer').show();  // 유튜브 비디오 표시
+
               // 새 항목을 히스토리 리스트에 추가
-              addToHistory(data);
+              addToHistory(data, youtubeLink);
             }
           });
         } else {
@@ -105,6 +129,12 @@
         card.click(function() {
           $('#result').html(entry.summary);  // 클릭 시 요약 내용 표시
           $('#copyBtn').show();  // Copy 버튼 표시
+
+          // 유튜브 비디오를 iframe에 임베드
+          const videoId = entry.youtube_link.split('v=')[1];
+          const embedUrl = `https://www.youtube.com/embed/${videoId}`;
+          $('#youtubePlayer').attr('src', embedUrl);
+          $('#youtubePlayer').show();  // 유튜브 비디오 표시
         });
         $('#history').append(card);  // 히스토리 영역에 추가
       }
