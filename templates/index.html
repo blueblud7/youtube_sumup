@@ -13,9 +13,10 @@
         background-color: #f4f4f4;
       }
       input[type="text"], textarea {
-        width: 80%;
+        width: 100%;
         padding: 10px;
         margin: 10px 0;
+        box-sizing: border-box;
       }
       button {
         padding: 10px 20px;
@@ -27,31 +28,35 @@
       button:hover {
         background-color: #0056b3;
       }
+      #summarizeBtn {
+        float: right;
+        margin-left: 10px;
+      }
+      #copyBtn {
+        background-color: #28a745;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        cursor: pointer;
+        display: none;
+        text-align: center;
+        margin-top: 10px;
+        float: right;
+      }
       #result {
+        clear: both;
         margin-top: 20px;
         padding: 15px;
         border: 1px solid #ddd;
         background-color: #fff;
         min-height: 100px;
         white-space: pre-wrap;
-        position: relative;
       }
       #loading {
         display: none;
         text-align: center;
         font-weight: bold;
-        margin-top: 10px;
         color: #007bff;
-      }
-      #copyBtn {
-        position: absolute;
-        right: 10px;
-        bottom: 10px;
-        background-color: #28a745;
-        color: white;
-        padding: 5px 10px;
-        border: none;
-        cursor: pointer;
       }
       .card {
         margin: 10px 0;
@@ -66,8 +71,29 @@
       iframe {
         margin-top: 20px;
         width: 100%;
-        height: 315px;
-        display: none;
+        aspect-ratio: 16 / 9;
+        border: none;
+      }
+      .copy-video-spacing {
+        margin-top: 20px;
+        clear: both;
+      }
+      /* Pagination buttons style */
+      .pagination {
+        display: flex;
+        justify-content: center;
+        margin-top: 20px;
+      }
+      .pagination button {
+        padding: 10px 15px;
+        margin: 5px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+      .pagination button:hover {
+        background-color: #0056b3;
       }
     </style>
   </head>
@@ -75,8 +101,6 @@
     <h2>YouTube Summarizer</h2>
     
     <input type="text" id="youtubeLink" placeholder="Enter YouTube link"><br>
-
-    <!-- Custom prompt 입력 필드 추가 -->
     <textarea id="customPrompt" placeholder="Enter your custom prompt (optional)"></textarea><br>
     
     <button id="summarizeBtn">Summarize</button>
@@ -84,51 +108,57 @@
     <h3>Result</h3>
     <div id="loading">Loading... Please wait.</div>
     <div id="result">Summary will appear here...</div>
-    <button id="copyBtn" style="display:none;">Copy</button>
 
-    <!-- 유튜브 비디오 임베드 영역 -->
+    <button id="copyBtn">Copy</button>
+
+    <div class="copy-video-spacing"></div>
+    
     <iframe id="youtubePlayer" src="" frameborder="0" allowfullscreen></iframe>
     
     <h3>History</h3>
     <div id="history"></div>
+
+    <!-- Pagination controls -->
+    <div class="pagination">
+      <button id="prevPage" disabled>Previous</button>
+      <button id="nextPage">Next</button>
+    </div>
     
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-      // 요약 요청
+      let currentPage = 1;
+      const itemsPerPage = 20;
+
       document.getElementById('summarizeBtn').addEventListener('click', function() {
         const youtubeLink = document.getElementById('youtubeLink').value;
         const customPrompt = document.getElementById('customPrompt').value;
 
         if (youtubeLink) {
-          // 로딩 메시지 표시
           $('#loading').show();
           $('#result').hide();
           $('#copyBtn').hide();
 
           $.post('/summarize', { youtube_link: youtubeLink, custom_prompt: customPrompt }, function(data) {
-            $('#loading').hide();  // 로딩 메시지 숨김
+            $('#loading').hide();
             if (data.error) {
               $('#result').text(data.error);
               $('#result').show();
-              $('#youtubePlayer').hide();  // 에러일 때는 임베드된 동영상 숨김
+              $('#youtubePlayer').hide();
             } else {
-              // 중복 메시지가 있으면 경고로 표시
-              if (data.message === "중복 URL입니다. 기존 요약 내용을 불러옵니다.") {
-                alert(data.message);  // 중복 메시지 경고창 표시
+              if (data.message === "중복된 URL입니다. 기존 요약 내용을 불러옵니다.") {
+                alert(data.message);
               }
 
-              $('#result').html(data.summary);  // HTML 형식으로 문단 띄어쓰기 반영
+              $('#result').html(data.summary);
               $('#result').show();
-              $('#copyBtn').show();  // 성공적으로 요약하면 Copy 버튼 표시
-              
-              // 유튜브 비디오를 iframe에 임베드
-              const videoId = extractVideoId(youtubeLink);  // 수정된 함수 사용
+              $('#copyBtn').show();
+
+              const videoId = extractVideoId(youtubeLink);
               const embedUrl = `https://www.youtube.com/embed/${videoId}`;
               $('#youtubePlayer').attr('src', embedUrl);
-              $('#youtubePlayer').show();  // 유튜브 비디오 표시
+              $('#youtubePlayer').show();
 
-              // 새 항목을 히스토리 리스트에 추가
-              addToHistory(data, youtubeLink);
+              loadHistory(currentPage);
             }
           });
         } else {
@@ -138,34 +168,56 @@
         }
       });
 
-      // 새 요약 항목을 히스토리 리스트에 추가
       function addToHistory(entry) {
-        const card = $('<div class="card"></div>').text(entry.youtube_link);
+        const card = $('<div class="card"></div>').text(entry.title + ' - ' + entry.youtube_link);
         card.click(function() {
-          $('#result').html(entry.summary);  // 클릭 시 요약 내용 표시
+          $('#result').html(entry.summary);
           $('#result').show();
-          $('#copyBtn').show();  // Copy 버튼 표시
+          $('#copyBtn').show();
 
-          // 유튜브 비디오를 iframe에 임베드
-          const videoId = extractVideoId(entry.youtube_link);  // 수정된 함수 사용
+          const videoId = extractVideoId(entry.youtube_link);
           const embedUrl = `https://www.youtube.com/embed/${videoId}`;
           $('#youtubePlayer').attr('src', embedUrl);
-          $('#youtubePlayer').show();  // 유튜브 비디오 표시
+          $('#youtubePlayer').show();
         });
-        $('#history').append(card);  // 히스토리 영역에 추가
+        $('#history').append(card);
       }
 
-      // 기존 히스토리 업데이트 함수
-      function updateHistory() {
-        $('#history').empty();  // 기존 히스토리 제거
-        $.getJSON('/history', function(history) {
-          history.forEach((item) => {
-            addToHistory(item);  // 각 항목을 히스토리에 추가
+      function loadHistory(page) {
+        $('#history').empty();
+
+        $.getJSON(`/history?page=${page}&itemsPerPage=${itemsPerPage}`, function(historyData) {
+          historyData.history.forEach((item) => {
+            addToHistory(item);
           });
+
+          // Manage pagination buttons
+          if (historyData.page === 1) {
+            $('#prevPage').prop('disabled', true);
+          } else {
+            $('#prevPage').prop('disabled', false);
+          }
+
+          if (historyData.page === historyData.totalPages) {
+            $('#nextPage').prop('disabled', true);
+          } else {
+            $('#nextPage').prop('disabled', false);
+          }
         });
       }
 
-      // Copy 버튼 클릭 시 결과 복사
+      $('#prevPage').on('click', function() {
+        if (currentPage > 1) {
+          currentPage--;
+          loadHistory(currentPage);
+        }
+      });
+
+      $('#nextPage').on('click', function() {
+        currentPage++;
+        loadHistory(currentPage);
+      });
+
       document.getElementById('copyBtn').addEventListener('click', function() {
         const summaryText = document.getElementById('result').innerText;
         navigator.clipboard.writeText(summaryText).then(() => {
@@ -175,7 +227,6 @@
         });
       });
 
-      // Video ID 추출 함수 수정
       function extractVideoId(youtubeLink) {
         let videoId = '';
 
@@ -190,9 +241,8 @@
         return videoId;
       }
 
-      // 페이지 로드 시 히스토리 초기화
       $(document).ready(function() {
-        updateHistory();
+        loadHistory(currentPage);
       });
     </script>
   </body>
