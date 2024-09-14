@@ -104,16 +104,11 @@ Thank you for using **YouTube Summarizer**! Feel free to contribute to the proje
 
 ---
 
-A web application that automatically summarizes YouTube videos by extracting transcripts and generating concise summaries using OpenAI's GPT model. This project is built with Flask and OpenAI API, allowing users to input a YouTube link and receive a summary of the video.
-
 ## Features
 - Automatically extracts and processes transcripts from YouTube videos.
 - Summarizes long transcripts into concise, readable blog posts.
 - Supports both English and Korean language summarization.
 - Simple and intuitive web interface for easy use.
-
-## Demo
-Check out the [live demo](#) (if hosted).
 
 ## Table of Contents
 1. [Installation](#installation)
