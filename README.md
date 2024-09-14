@@ -1,4 +1,108 @@
-# YouTube Video Summarizer
+# YouTube Summarizer
+
+## Project Overview
+- **Project Name**: YouTube Summarizer
+- **Project Goal**: 
+  Develop a web application that allows users to input YouTube links and get summarized content in their preferred language. The application will manage summary history, handle video embedding, support custom prompts, and provide a multilingual interface.
+- **Key Features**:
+  - YouTube video summarization
+  - Custom prompt functionality
+  - YouTube video embedding
+  - Copy summarized result feature
+  - Duplicate URL handling
+  - History management and deletion
+  - Multilingual summary support
+  - Loading state indication during processing
+
+## Project Scope
+- **Feature Scope**:
+  - Input YouTube links and receive a summarized result in the desired language.
+  - Detect and provide existing summaries for duplicate links.
+  - Provide YouTube video embedding along with the summary.
+  - Manage users' request history with options for deleting entries.
+  - Offer multiple language options for the summary output.
+- **Limitations**:
+  - Users can input only YouTube links via the provided fields.
+  - API rate limits may affect usage.
+
+## Project Timeline
+1. **Planning**: 1 week
+   - Requirement analysis
+   - System design
+2. **Design**: 1 week
+   - UI/UX design
+   - HTML/CSS layout design
+3. **Development**: 2-3 weeks
+   - Integration of YouTube API and OpenAI API
+   - Development of custom prompt functionality
+   - Duplicate URL handling logic
+   - History management feature development
+   - Multilingual support development
+4. **Testing**: 1 week
+   - Functional testing
+   - Bug fixing
+   - Performance optimization
+5. **Deployment**: 1 week
+   - Server deployment
+   - Incorporating user feedback
+
+## Team Structure
+- **Project Manager (PM)**: Oversees project management and schedule.
+- **Frontend Developer**: Focuses on UI/UX development using HTML/CSS/JavaScript.
+- **Backend Developer**: Handles Flask development, API integration, and database design.
+- **Tester**: Conducts application functionality and performance testing.
+
+## Tech Stack
+- **Frontend**: HTML, CSS, JavaScript, jQuery
+- **Backend**: Python, Flask
+- **API**: YouTube Data API, OpenAI API
+- **Database**: JSON file or a simple NoSQL database (for history management)
+- **Deployment**: Heroku or AWS EC2
+- **Version Control**: Git, GitHub
+
+## Risk Management
+- **Technical Risks**:
+  - **API Usage Limits**: Service downtime may occur due to YouTube and OpenAI API rate limits.
+  - **Performance Issues**: Risk of server overload with many concurrent users.
+  - **Browser Compatibility**: Issues could arise with various browsers.
+- **Mitigation**:
+  - Monitor API usage and consider alternatives if limits are reached.
+  - Optimize API calls for better performance.
+  - Test compatibility across major browsers.
+
+## Performance Metrics
+- **Performance Goals**:
+  - Ensure summarization accuracy and comprehensiveness.
+  - Provide fast response times.
+  - Gather and incorporate user feedback.
+- **Performance Indicators**:
+  - API response time
+  - User retention rate
+  - Error logs and frequency
+
+## Test Plan
+- **Unit Testing**: Test individual functions and components.
+- **Integration Testing**: Ensure smooth interaction between frontend and backend.
+- **User Testing**: Gather feedback through user testing.
+- **Performance Testing**: Measure response time and API performance.
+
+## Deployment Plan
+- **Deployment Environment**: Heroku or AWS EC2
+- **Process**:
+  1. Final testing in the staging environment.
+  2. Set up and configure the server for deployment.
+  3. Roll out updates and maintenance based on user feedback.
+
+## Maintenance and Updates
+- **Bug Fixes and Feature Enhancements**: Ongoing code refactoring and performance improvements.
+- **New Feature Development**: Add features based on user requests (e.g., support for more languages, new API integrations).
+- **Logs and Monitoring**: Regularly monitor server health and collect error logs for analysis.
+
+---
+
+Thank you for using **YouTube Summarizer**! Feel free to contribute to the project or report any issues you encounter.
+
+---
 
 A web application that automatically summarizes YouTube videos by extracting transcripts and generating concise summaries using OpenAI's GPT model. This project is built with Flask and OpenAI API, allowing users to input a YouTube link and receive a summary of the video.
 
@@ -93,9 +197,3 @@ youtube-video-summarizer/
 
 ### License
 This project is licensed under the MIT License - see the LICENSE file for details.
-
-
-### 사용 방법
-1. 위 내용을 복사하여 프로젝트의 루트 디렉토리에 `README.md` 파일을 생성한 후 붙여넣으세요.
-2. `yourusername`과 같은 부분을 GitHub 사용자명과 리포지토리명에 맞게 변경하세요.
-3. 커밋 후 GitHub에 푸시하면 `README.md` 파일이 GitHub 리포지토리 페이지에 자동으로 표시됩니다.
