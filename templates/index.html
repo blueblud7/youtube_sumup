@@ -83,6 +83,7 @@
         display: flex;
         justify-content: center;
         margin-top: 20px;
+        flex-wrap: wrap;
       }
       .pagination button {
         padding: 10px 15px;
@@ -94,6 +95,10 @@
       }
       .pagination button:hover {
         background-color: #0056b3;
+      }
+      .pagination .active {
+        background-color: #0056b3;
+        cursor: default;
       }
     </style>
   </head>
@@ -121,6 +126,7 @@
     <!-- Pagination controls -->
     <div class="pagination">
       <button id="prevPage" disabled>Previous</button>
+      <div id="pageNumbers"></div>
       <button id="nextPage">Next</button>
     </div>
     
@@ -191,19 +197,36 @@
             addToHistory(item);
           });
 
-          // Manage pagination buttons
-          if (historyData.page === 1) {
-            $('#prevPage').prop('disabled', true);
-          } else {
-            $('#prevPage').prop('disabled', false);
-          }
-
-          if (historyData.page === historyData.totalPages) {
-            $('#nextPage').prop('disabled', true);
-          } else {
-            $('#nextPage').prop('disabled', false);
-          }
+          updatePaginationButtons(historyData.page, historyData.totalPages);
         });
+      }
+
+      function updatePaginationButtons(currentPage, totalPages) {
+        $('#pageNumbers').empty();
+
+        for (let i = 1; i <= totalPages; i++) {
+          const pageButton = $('<button></button>').text(i);
+          if (i === currentPage) {
+            pageButton.addClass('active');
+          } else {
+            pageButton.click(function() {
+              loadHistory(i);
+            });
+          }
+          $('#pageNumbers').append(pageButton);
+        }
+
+        if (currentPage === 1) {
+          $('#prevPage').prop('disabled', true);
+        } else {
+          $('#prevPage').prop('disabled', false);
+        }
+
+        if (currentPage === totalPages) {
+          $('#nextPage').prop('disabled', true);
+        } else {
+          $('#nextPage').prop('disabled', false);
+        }
       }
 
       $('#prevPage').on('click', function() {
