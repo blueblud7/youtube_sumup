@@ -2,7 +2,6 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
     <title>YouTube Summarizer</title>
     <style>
       body {
@@ -36,6 +35,13 @@
         min-height: 100px;
         white-space: pre-wrap;
         position: relative;
+      }
+      #loading {
+        display: none;
+        text-align: center;
+        font-weight: bold;
+        margin-top: 10px;
+        color: #007bff;
       }
       #copyBtn {
         position: absolute;
@@ -76,6 +82,7 @@
     <button id="summarizeBtn">Summarize</button>
     
     <h3>Result</h3>
+    <div id="loading">Loading... Please wait.</div>
     <div id="result">Summary will appear here...</div>
     <button id="copyBtn" style="display:none;">Copy</button>
 
@@ -93,10 +100,16 @@
         const customPrompt = document.getElementById('customPrompt').value;
 
         if (youtubeLink) {
+          // 로딩 메시지 표시
+          $('#loading').show();
+          $('#result').hide();
+          $('#copyBtn').hide();
+
           $.post('/summarize', { youtube_link: youtubeLink, custom_prompt: customPrompt }, function(data) {
+            $('#loading').hide();  // 로딩 메시지 숨김
             if (data.error) {
               $('#result').text(data.error);
-              $('#copyBtn').hide();  // 에러일 때는 Copy 버튼 숨김
+              $('#result').show();
               $('#youtubePlayer').hide();  // 에러일 때는 임베드된 동영상 숨김
             } else {
               // 중복 메시지가 있으면 경고로 표시
@@ -105,10 +118,11 @@
               }
 
               $('#result').html(data.summary);  // HTML 형식으로 문단 띄어쓰기 반영
+              $('#result').show();
               $('#copyBtn').show();  // 성공적으로 요약하면 Copy 버튼 표시
               
               // 유튜브 비디오를 iframe에 임베드
-              const videoId = youtubeLink.split('v=')[1];
+              const videoId = extractVideoId(youtubeLink);  // 수정된 함수 사용
               const embedUrl = `https://www.youtube.com/embed/${videoId}`;
               $('#youtubePlayer').attr('src', embedUrl);
               $('#youtubePlayer').show();  // 유튜브 비디오 표시
@@ -119,6 +133,7 @@
           });
         } else {
           $('#result').text('Please enter a valid YouTube link');
+          $('#result').show();
           $('#copyBtn').hide();
         }
       });
@@ -128,10 +143,11 @@
         const card = $('<div class="card"></div>').text(entry.youtube_link);
         card.click(function() {
           $('#result').html(entry.summary);  // 클릭 시 요약 내용 표시
+          $('#result').show();
           $('#copyBtn').show();  // Copy 버튼 표시
 
           // 유튜브 비디오를 iframe에 임베드
-          const videoId = entry.youtube_link.split('v=')[1];
+          const videoId = extractVideoId(entry.youtube_link);  // 수정된 함수 사용
           const embedUrl = `https://www.youtube.com/embed/${videoId}`;
           $('#youtubePlayer').attr('src', embedUrl);
           $('#youtubePlayer').show();  // 유튜브 비디오 표시
@@ -158,6 +174,21 @@
           console.error('Failed to copy text: ', err);
         });
       });
+
+      // Video ID 추출 함수 수정
+      function extractVideoId(youtubeLink) {
+        let videoId = '';
+
+        if (youtubeLink.includes('youtube.com/watch?v=')) {
+          videoId = youtubeLink.split('v=')[1].split('&')[0];
+        } else if (youtubeLink.includes('youtu.be/')) {
+          videoId = youtubeLink.split('youtu.be/')[1].split('?')[0];
+        } else {
+          console.error('Invalid YouTube link format');
+        }
+
+        return videoId;
+      }
 
       // 페이지 로드 시 히스토리 초기화
       $(document).ready(function() {
