@@ -14,9 +14,8 @@ Check out the [live demo](#) (if hosted).
 ## Table of Contents
 1. [Installation](#installation)
 2. [Usage](#usage)
-3. [Configuration](#configuration)
-4. [API Key Setup](#api-key-setup)
-5. [License](#license)
+3. [API Key Setup](#api-key-setup)
+4. [License](#license)
 
 ## Installation
 
