@@ -6,125 +6,85 @@ Created on Mon Sep  9 11:06:27 2024
 @author: Sangwon Chae
 """
 
-from youtube_transcript_api import YouTubeTranscriptApi
-from openai import OpenAI
-import re
-import tiktoken
-from dotenv import load_dotenv
+from flask import Flask, render_template, request, jsonify
+import youtube_summary  # YouTube 요약 코드를 포함한 파일
+import json  # json 모듈 임포트
 import os
 
-# 환경 변수 로드
-load_dotenv()
+app = Flask(__name__)
 
-openai_api_key = os.getenv('OPENAI_API_KEY')
-client = OpenAI(api_key=openai_api_key)
+# 히스토리를 저장하는 리스트
+history = []
 
-def get_youtube_transcript(video_id):
-    try:
-        transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['ko'])
-        return ' '.join([entry['text'] for entry in transcript]), 'ko'
-    except:
-        try:
-            transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
-            return ' '.join([entry['text'] for entry in transcript]), 'en'
-        except Exception as e:
-            print(f"Failed to retrieve transcript: {str(e)}")
-            return None, None
+# history.json 파일에서 기존 히스토리 로드
+if os.path.exists('history.json'):
+    with open('history.json', 'r') as f:
+        history = json.load(f)
 
-def num_tokens_from_string(string: str, encoding_name: str) -> int:
-    encoding = tiktoken.get_encoding(encoding_name)
-    num_tokens = len(encoding.encode(string))
-    return num_tokens
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-def split_transcript(transcript, max_tokens=2000):
-    chunks = []
-    current_chunk = ""
-    current_tokens = 0
+@app.route('/summarize', methods=['POST'])
+def summarize():
+    youtube_link = request.form['youtube_link']
+    custom_prompt = request.form.get('custom_prompt', '')
 
-    for sentence in re.split('(?<=[.!?]) +', transcript):
-        sentence_tokens = num_tokens_from_string(sentence, "cl100k_base")
-        if current_tokens + sentence_tokens > max_tokens:
-            chunks.append(current_chunk.strip())
-            current_chunk = sentence
-            current_tokens = sentence_tokens
-        else:
-            current_chunk += " " + sentence
-            current_tokens += sentence_tokens
+    # 유튜브 링크에서 VIDEO_ID를 추출하는 함수 호출
+    video_id = extract_video_id(youtube_link)
 
-    if current_chunk:
-        chunks.append(current_chunk.strip())
+    if not video_id:
+        return jsonify({"error": "Invalid YouTube link."}), 400
 
-    return chunks
+    # YouTube Video ID로 중복된 비디오가 있는지 확인
+    for entry in history:
+        if entry.get('video_id') == video_id:
+            return jsonify({"message": "중복된 URL입니다. 기존 요약을 보여드리겠습니다.",
+                            "youtube_link": entry['youtube_link'], 
+                            "summary": entry['summary'],
+                            "title": entry['title']})
 
-def summarize_chunk(chunk, chunk_number, total_chunks, language, custom_prompt=''):
-    prompt = f"""
-    Summarize the key points of this YouTube video into a concise, easy-to-understand blog post in Korean. 
-    Ensure that all major topics and information are included, and the summary should allow readers to fully grasp the content without needing to watch the video. Organize the summary into paragraphs with a natural flow, and highlight the most important points.
+    # 요약 결과 생성
+    summary = youtube_summary.summarize_youtube_video(video_id, custom_prompt)
 
-    Additional Notes:
-    - Start with a clear sentence explaining the video's topic.
-    - Summarize the main ideas or information briefly and concisely.
-    - Conclude with a key takeaway or final summary.
+    if summary:
+        # 히스토리에 추가
+        entry = {'youtube_link': youtube_link, 'video_id': video_id, 'summary': summary, 'title': 'Video Title'}
+        history.append(entry)
 
-    Transcript part {chunk_number} of {total_chunks}:
-    {chunk}
-    
-    Summary:
-    """
+        # 새로운 요약이 추가될 때 history.json 파일에 저장
+        with open('history.json', 'w') as f:
+            json.dump(history, f)
 
-    print(f"Generated prompt for chunk {chunk_number}: {prompt}")
-    
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": f"You are a helpful assistant that summarizes parts of YouTube video transcripts."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7,
-            max_tokens=100
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        print(f"Failed to summarize chunk {chunk_number}: {str(e)}")
+        return jsonify(entry)
+    else:
+        return jsonify({"error": "Summary generation failed."}), 500
+
+@app.route('/history', methods=['GET'])
+def get_history():
+    page = int(request.args.get('page', 1))
+    items_per_page = int(request.args.get('itemsPerPage', 20))
+
+    start = (page - 1) * items_per_page
+    end = start + items_per_page
+    total_pages = (len(history) + items_per_page - 1) // items_per_page
+
+    paginated_history = history[start:end]
+
+    return jsonify({
+        'history': paginated_history,
+        'page': page,
+        'totalPages': total_pages
+    })
+
+def extract_video_id(youtube_link):
+    """YouTube 링크에서 VIDEO_ID를 추출하는 함수"""
+    if "youtube.com/watch?v=" in youtube_link:
+        return youtube_link.split("v=")[1].split("&")[0]  # 브라우저 URL 처리
+    elif "youtu.be/" in youtube_link:
+        return youtube_link.split("youtu.be/")[1].split("?")[0]  # 공유 URL 처리
+    else:
         return None
 
-def generate_blog_post(summaries, language):
-    combined_summary = "\n\n".join(summaries)
-    
-    prompt = f"""
-    Based on the following summaries, write a blog post that is informative and easy to understand in Korean. 
-    Summaries:
-    {combined_summary}
-    """
-
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": f"You are a helpful assistant that generates blog posts from YouTube video summaries."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7,
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        print(f"Failed to generate blog post: {str(e)}")
-        return None
-
-def summarize_youtube_video(youtube_link, custom_prompt=''):
-    video_id = youtube_link.split("v=")[-1]
-    transcript, language = get_youtube_transcript(video_id)
-
-    if transcript:
-        transcript_chunks = split_transcript(transcript)
-        chunk_summaries = []
-
-        for i, chunk in enumerate(transcript_chunks):
-            summary = summarize_chunk(chunk, i+1, len(transcript_chunks), language, custom_prompt)
-            if summary:
-                chunk_summaries.append(summary)
-
-        if chunk_summaries:
-            return generate_blog_post(chunk_summaries, language)
-    return "Failed to retrieve transcript."
+if __name__ == '__main__':
+    app.run(debug=True)
